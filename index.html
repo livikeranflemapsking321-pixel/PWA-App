@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>📱 Notify - PWA</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#00ff41" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 420px;
+            width: 100%;
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid rgba(0, 255, 65, 0.2);
+            border-radius: 24px;
+            padding: 30px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 10px;
+        }
+        h1 {
+            color: #00ff41;
+            font-size: 2rem;
+            margin-bottom: 5px;
+            font-weight: 800;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 25px;
+        }
+        .status-box {
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .status-box .label {
+            font-size: 0.75rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        #permStatus {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-top: 4px;
+            display: inline-block;
+            padding: 4px 16px;
+            border-radius: 20px;
+        }
+        #permStatus.granted {
+            color: #00ff41;
+            background: rgba(0, 255, 65, 0.1);
+        }
+        #permStatus.denied {
+            color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+        }
+        #permStatus.default {
+            color: #ffaa00;
+            background: rgba(255, 170, 0, 0.1);
+        }
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #00ff41, #00cc33);
+            color: #000;
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 255, 65, 0.3);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #00ff41;
+        }
+        .btn-install {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            color: #fff;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .btn-install:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(124, 58, 237, 0.3);
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(0.98);
+            }
+        }
+        #log {
+            margin-top: 15px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            font-size: 0.8rem;
+            color: #666;
+            min-height: 50px;
+            font-family: 'Courier New', monospace;
+            text-align: left;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        #log::-webkit-scrollbar {
+            width: 3px;
+        }
+        #log::-webkit-scrollbar-thumb {
+            background: #00ff41;
+            border-radius: 10px;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 0.7rem;
+            color: #333;
+        }
+        .footer a {
+            color: #00ff41;
+            text-decoration: none;
+        }
+        .badge-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .badge {
+            font-size: 0.6rem;
+            padding: 3px 12px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #666;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .badge.active {
+            color: #00ff41;
+            border-color: #00ff41;
+            background: rgba(0, 255, 65, 0.05);
+        }
+        .badge.installed {
+            color: #7c3aed;
+            border-color: #7c3aed;
+            background: rgba(124, 58, 237, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">📱</div>
+        <h1>Notify</h1>
+        <p class="subtitle">Native notifications from the web</p>
+
+        <div class="status-box">
+            <div class="label">Permission Status</div>
+            <div id="permStatus" class="default">⏳ Checking...</div>
+        </div>
+
+        <button class="btn btn-primary" id="requestBtn">📨 Request Permission</button>
+        <button class="btn btn-secondary" id="sendBtn" disabled>📤 Send Notification</button>
+        <button class="btn btn-secondary" id="scheduleBtn" disabled>⏰ Schedule in 5s</button>
+        <button class="btn btn-install" id="installBtn" style="display:none;">📲 Install App</button>
+
+        <div class="badge-row">
+            <span class="badge" id="pwaBadge">🌐 Web App</span>
+            <span class="badge" id="swBadge">⚡ Service Worker</span>
+            <span class="badge" id="installBadge">📲 Not Installed</span>
+        </div>
+
+        <div id="log">📋 Ready — Tap "Request Permission"</div>
+
+        <div class="footer">Made with ❤️ • <a href="#" onclick="location.reload()">🔄 Refresh</a></div>
+    </div>
+
+    <script>
+        // ============================================
+        // SERVICE WORKER - INLINE (No redirect issues!)
+        // ============================================
+
+        function registerInlineServiceWorker() {
+            const swCode = `
+                    const CACHE_NAME = 'notify-v1';
+                    const urlsToCache = ['/', '/index.html', '/manifest.json'];
+
+                    self.addEventListener('install', (event) => {
+                        event.waitUntil(
+                            caches.open(CACHE_NAME).then((cache) => {
+                                return cache.addAll(urlsToCache);
+                            })
+                        );
+                        self.skipWaiting();
+                    });
+
+                    self.addEventListener('activate', (event) => {
+                        event.waitUntil(
+                            caches.keys().then((cacheNames) => {
+                                return Promise.all(
+                                    cacheNames.map((cacheName) => {
+                                        if (cacheName !== CACHE_NAME) {
+                                            return caches.delete(cacheName);
+                                        }
+                                    })
+                                );
+                            })
+                        );
+                        self.clients.claim();
+                    });
+
+                    self.addEventListener('fetch', (event) => {
+                        event.respondWith(
+                            caches.match(event.request).then((response) => {
+                                return response || fetch(event.request);
+                            })
+                        );
+                    });
+
+                    // NOTIFICATIONS
+                    self.addEventListener('message', (event) => {
+                        if (event.data && event.data.type === 'show-notification') {
+                            const data = event.data;
+                            self.registration.showNotification(
+                                data.title || '🔔 Notification', {
+                                    body: data.body || 'You have a new notification!',
+                                    vibrate: [200, 100, 200, 100, 200],
+                                    tag: Date.now().toString(),
+                                    requireInteraction: true,
+                                    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90" text-anchor="middle" x="50">📱</text></svg>'
+                                }
+                            );
+                        }
+                    });
+
+                    self.addEventListener('notificationclick', (event) => {
+                        event.notification.close();
+                        event.waitUntil(
+                            clients.matchAll({ type: 'window' }).then((clientList) => {
+                                if (clientList.length > 0) {
+                                    clientList[0].focus();
+                                } else {
+                                    clients.openWindow('/');
+                                }
+                            })
+                        );
+                    });
+                `;
+
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(blob);
+
+            return navigator.serviceWorker.register(swUrl, { scope: '/' });
+        }
+
+        // ============================================
+        // REGISTER SW
+        // ============================================
+
+        let swRegistered = false;
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                .then(() => {
+                    swRegistered = true;
+                    document.getElementById('swBadge').textContent = '✅ Service Worker';
+                    document.getElementById('swBadge').className = 'badge active';
+                    log('✅ Service Worker registered!', 'success');
+                })
+                .catch(() => {
+                    registerInlineServiceWorker()
+                        .then(() => {
+                            swRegistered = true;
+                            document.getElementById('swBadge').textContent = '✅ SW (Inline)';
+                            document.getElementById('swBadge').className = 'badge active';
+                            log('✅ Inline Service Worker registered!', 'success');
+                        })
+                        .catch(() => {
+                            document.getElementById('swBadge').textContent = '❌ SW Failed';
+                            log('⚠️ Service Worker not available', 'warning');
+                        });
+                });
+        }
+
+        // ============================================
+        // DOM ELEMENTS
+        // ============================================
+
+        const statusEl = document.getElementById('permStatus');
+        const logEl = document.getElementById('log');
+        const requestBtn = document.getElementById('requestBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        const scheduleBtn = document.getElementById('scheduleBtn');
+        const installBtn = document.getElementById('installBtn');
+        const pwaBadge = document.getElementById('pwaBadge');
+        const installBadge = document.getElementById('installBadge');
+
+        function log(msg, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const icons = { info: 'ℹ️', success: '✅', error: '❌', warning: '⚠️' };
+            logEl.innerHTML = `${icons[type] || '📋'} [${time}] ${msg}`;
+        }
+
+        function updateStatus() {
+            if (!('Notification' in window)) {
+                statusEl.textContent = '❌ Not Supported';
+                statusEl.className = 'denied';
+                return;
+            }
+
+            const perm = Notification.permission;
+            statusEl.textContent = perm.toUpperCase();
+
+            if (perm === 'granted') {
+                statusEl.className = 'granted';
+                sendBtn.disabled = false;
+                scheduleBtn.disabled = false;
+                log('✅ Permission granted!', 'success');
+            } else if (perm === 'denied') {
+                statusEl.className = 'denied';
+                log('❌ Permission denied.', 'error');
+            } else {
+                statusEl.className = 'default';
+                log('⏳ Click "Request Permission"', 'warning');
+            }
+        }
+
+        // ============================================
+        // REQUEST PERMISSION
+        // ============================================
+        requestBtn.onclick = async () => {
+            try {
+                const result = await Notification.requestPermission();
+                updateStatus();
+
+                if (result === 'granted') {
+                    log('✅ Permission granted! Now install the app for notifications.', 'success');
+                    if (installBtn.style.display === 'none') {
+                        installBtn.style.display = 'block';
+                        installBtn.textContent = '📲 INSTALL APP (Required for Notifications)';
+                    }
+                    setTimeout(() => {
+                        sendNotification('🎉 Welcome!', 'Install the app to receive notifications!');
+                    }, 1000);
+                }
+            } catch (e) {
+                log('❌ Error: ' + e.message, 'error');
+            }
+        };
+
+        // ============================================
+        // SEND NOTIFICATION
+        // ============================================
+        sendBtn.onclick = () => {
+            if (Notification.permission !== 'granted') {
+                log('❌ Permission not granted!', 'error');
+                return;
+            }
+
+            if (!window.matchMedia('(display-mode: standalone)').matches) {
+                log('⚠️ Install the app first for notifications to show!', 'warning');
+                if (installBtn.style.display === 'none') {
+                    installBtn.style.display = 'block';
+                }
+                return;
+            }
+
+            sendNotification('🔔 New Notification!', 'This works on your phone! 📱');
+            log('✅ Notification sent!', 'success');
+        };
+
+        // ============================================
+        // SCHEDULE NOTIFICATION
+        // ============================================
+        scheduleBtn.onclick = () => {
+            if (Notification.permission !== 'granted') {
+                log('❌ Permission not granted!', 'error');
+                return;
+            }
+
+            if (!window.matchMedia('(display-mode: standalone)').matches) {
+                log('⚠️ Install the app first!', 'warning');
+                if (installBtn.style.display === 'none') {
+                    installBtn.style.display = 'block';
+                }
+                return;
+            }
+
+            log('⏳ Scheduling in 5 seconds...', 'warning');
+            setTimeout(() => {
+                sendNotification('⏰ Scheduled!', 'Sent 5 seconds later!');
+                log('✅ Scheduled notification delivered!', 'success');
+            }, 5000);
+        };
+
+        // ============================================
+        // SEND NOTIFICATION FUNCTION
+        // ============================================
+        function sendNotification(title, body) {
+            try {
+                if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'show-notification',
+                        title: title,
+                        body: body
+                    });
+                    return;
+                }
+
+                const notification = new Notification(title, {
+                    body: body,
+                    vibrate: [200, 100, 200],
+                    tag: Date.now().toString()
+                });
+
+                notification.onclick = () => {
+                    window.focus();
+                    log('👆 User clicked notification!', 'info');
+                };
+            } catch (e) {
+                log('❌ Notification error: ' + e.message, 'error');
+            }
+        }
+
+        // ============================================
+        // PWA INSTALL PROMPT
+        // ============================================
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'block';
+            installBtn.textContent = '📲 INSTALL APP (Required for Notifications)';
+            pwaBadge.textContent = '✅ Installable PWA';
+            pwaBadge.className = 'badge active';
+            log('📲 Tap "Install App" to enable notifications!', 'info');
+        });
+
+        installBtn.onclick = async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const result = await deferredPrompt.userChoice;
+                if (result.outcome === 'accepted') {
+                    log('✅ App installed successfully! 🎉', 'success');
+                    installBtn.style.display = 'none';
+                    installBadge.textContent = '✅ Installed';
+                    installBadge.className = 'badge installed';
+                    pwaBadge.textContent = '📱 Native App';
+                    pwaBadge.className = 'badge installed';
+
+                    setTimeout(() => {
+                        sendNotification('🎉 Installed!', 'Notifications will now work!');
+                    }, 2000);
+                } else {
+                    log('❌ Installation declined. Notifications may not work.', 'error');
+                }
+                deferredPrompt = null;
+            }
+        };
+
+        // ============================================
+        // DETECT IF RUNNING AS PWA
+        // ============================================
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            pwaBadge.textContent = '📱 Native App';
+            pwaBadge.className = 'badge installed';
+            installBadge.textContent = '✅ Installed';
+            installBadge.className = 'badge installed';
+            installBtn.style.display = 'none';
+            log('📱 Running as installed app! Notifications will work.', 'success');
+        }
+
+        // ============================================
+        // INIT
+        // ============================================
+        updateStatus();
+        log('🚀 App ready!', 'info');
+
+        setTimeout(() => {
+            if (!window.matchMedia('(display-mode: standalone)').matches) {
+                log('💡 Tap "Install App" to enable notifications!', 'warning');
+                if (installBtn.style.display === 'none') {
+                    installBtn.style.display = 'block';
+                }
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
